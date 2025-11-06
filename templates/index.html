@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>PitMaster v1.0.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #121212;
+            color: #eee;
+            margin: 0;
+            padding: 1em;
+        }
+        h1 {
+            color: #f05a28;
+            margin-bottom: 1em;
+        }
+        .sensor {
+            background: #1e1e1e;
+            border-radius: 12px;
+            margin: 1em auto;
+            padding: 1em;
+            max-width: 300px;
+            box-shadow: 0 0 10px rgba(240,90,40,0.5);
+        }
+        .temp {
+            font-size: 3em;
+            margin: 0.3em 0;
+        }
+        .timestamp {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div id="smoker_left" class="sensor">
+        <h1>Smoker Left</h1>
+        <div class="temp" id="smoker_left_temp">-- °F</div>
+    </div>
+
+    <div id="smoker_right" class="sensor">
+        <h1>Smoker Right</h1>
+        <div class="temp" id="smoker_right_temp">-- °F</div>
+    </div>
+
+    <div id="meat_probe" class="sensor">
+        <h1>Meat Probe</h1>
+        <div class="temp" id="meat_probe_temp">-- °F</div>
+    </div>
+
+    <div class="timestamp" id="timestamp">Last Updated: --</div>
+
+    <script>
+        async function updateTemps() {
+            try {
+                const res = await fetch('/data');
+                const json = await res.json();
+
+                document.getElementById('smoker_left_temp').innerText = json.smoker_left.temp_f + " °F";
+                document.getElementById('smoker_right_temp').innerText = json.smoker_right.temp_f + " °F";
+                document.getElementById('meat_probe_temp').innerText = json.meat_probe.temp_f + " °F";
+                document.getElementById('timestamp').innerText = "Last Updated: " + json.last_updated;
+            } catch (e) {
+                console.error("Error fetching data:", e);
+            }
+        }
+
+        // Update every 3 seconds
+        setInterval(updateTemps, 3000);
+        updateTemps();
+    </script>
+</body>
+</html>
+
