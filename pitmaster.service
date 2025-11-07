@@ -1,0 +1,15 @@
+[Unit]
+Description=PitMaster Temperature Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=shmeggle
+WorkingDirectory=/home/shmeggle/pitmaster/src
+Environment=PATH=/home/shmeggle/pitmaster/pitmaster_env/bin
+ExecStart=/home/shmeggle/pitmaster/pitmaster_env/bin/python /home/shmeggle/pitmaster/src/run_pitmaster.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
