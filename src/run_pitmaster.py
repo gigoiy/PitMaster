@@ -59,11 +59,23 @@ def create_app():
             with open('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor', 'r') as f:
                 governor = f.read().strip()
             with open('/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq', 'r') as f:
-                freq = int(f.read().strip()) // 1000
-            return f"Power Mode: LOW POWER 24/7<br>CPU Governor: {governor}<br>CPU Freq: {freq}MHz<br>System: Running"
+                cur_freq = int(f.read().strip()) // 1000
+            with open('/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq', 'r') as f:
+                min_freq = int(f.read().strip()) // 1000
+            with open('/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq', 'r') as f:
+                max_freq = int(f.read().strip()) // 1000
+        
+            return {
+                "power_mode": "LOW POWER 24/7" if governor == "powersave" else "FULL POWER",
+                "cpu_governor": governor,
+                "cpu_cur_freq": cur_freq,
+                "cpu_min_freq": min_freq,
+                "cpu_max_freq": max_freq,
+                "status": "Running"
+            }
         except Exception as e:
-            return f"Power Mode: UNKNOWN<br>Error: {str(e)}"
-
+            return {"error": str(e)}, 500
+        
     @app.route('/enable-low-power')
     def enable_low_power():
         """Enable low power mode"""
