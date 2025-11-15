@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>PitMaster v1.0.0</title>
@@ -13,31 +14,37 @@
             margin: 0;
             padding: 1em;
         }
+
         h1 {
             color: #f05a28;
             margin-bottom: 1em;
         }
+
         .sensor {
             background: #1e1e1e;
             border-radius: 12px;
             margin: 1em auto;
             padding: 1em;
             max-width: 300px;
-            box-shadow: 0 0 10px rgba(240,90,40,0.5);
+            box-shadow: 0 0 10px rgba(240, 90, 40, 0.5);
         }
+
         .temp {
             font-size: 3em;
             margin: 0.3em 0;
         }
+
         .timestamp {
             font-size: 0.9em;
             color: #aaa;
             margin: 1em 0;
         }
+
         .controls {
             margin: 2em auto;
             max-width: 300px;
         }
+
         .control-btn {
             background: #f05a28;
             color: white;
@@ -50,21 +57,27 @@
             transition: background 0.3s;
             width: 200px;
         }
+
         .control-btn:hover {
             background: #d84a18;
         }
+
         .control-btn.danger {
             background: #dc3545;
         }
+
         .control-btn.danger:hover {
             background: #c82333;
         }
+
         .control-btn.success {
             background: #28a745;
         }
+
         .control-btn.success:hover {
             background: #218838;
         }
+
         .power-status {
             background: #2a2a2a;
             border-radius: 8px;
@@ -73,24 +86,30 @@
             max-width: 300px;
             text-align: left;
         }
+
         .status-item {
             margin: 0.5em 0;
             display: flex;
             justify-content: space-between;
         }
+
         .status-label {
             color: #aaa;
         }
+
         .status-value {
             color: #4CAF50;
             font-weight: bold;
         }
+
         .status-value.warning {
             color: #ff9800;
         }
+
         .status-value.error {
             color: #f44336;
         }
+
         .notification {
             background: #333;
             border-radius: 5px;
@@ -98,16 +117,19 @@
             margin: 10px 0;
             display: none;
         }
+
         .notification.success {
             background: #2d5016;
             color: #8bc34a;
         }
+
         .notification.error {
             background: #5c2a2a;
             color: #f44336;
         }
     </style>
 </head>
+
 <body>
     <h1>PitMaster v1.0.0</h1>
 
@@ -131,10 +153,10 @@
     <!-- Power Status Section -->
     <div class="controls">
         <h3>System Controls</h3>
-        
+
         <!-- Notification Area -->
         <div id="notification" class="notification"></div>
-        
+
         <!-- Control Buttons -->
         <button class="control-btn" onclick="getPowerStatus()">📊 Check Power Status</button>
         <button class="control-btn success" onclick="enableLowPower()">🔋 Enable Low Power</button>
@@ -194,91 +216,51 @@
             notification.textContent = message;
             notification.className = `notification ${type}`;
             notification.style.display = 'block';
-            
-            // Auto-hide after 5 seconds
+
             setTimeout(() => {
                 notification.style.display = 'none';
             }, 5000);
         }
 
-        // Power status function
+        // Power status function - UPDATED FOR JSON RESPONSE
         async function getPowerStatus() {
             try {
                 const res = await fetch('/powerstatus');
-                const text = await res.text();
-                
+                const data = await res.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
                 const statusDiv = document.getElementById('powerStatus');
-                const lines = text.split('<br>');
-                
-                let cpuGovernor = '--';
-                let cpuFreq = '--';
-                let systemMode = '--';
-                
-                lines.forEach(line => {
-                    if (line.includes('CPU Governor:')) {
-                        cpuGovernor = line.split(':')[1].trim();
-                    } else if (line.includes('CPU Freq:')) {
-                        cpuFreq = line.split(':')[1].trim();
-                    } else if (line.includes('Power Mode:')) {
-                        systemMode = line.split(':')[1].trim();
-                    }
-                });
-                
-                // Get additional CPU info
-                const cpuInfo = await getCPUInfo();
-                document.getElementById('cpuGovernor').textContent = cpuGovernor;
-                document.getElementById('cpuFreq').textContent = cpuFreq + ' MHz';
-                document.getElementById('cpuMinFreq').textContent = cpuInfo.minFreq + ' MHz';
-                document.getElementById('cpuMaxFreq').textContent = cpuInfo.maxFreq + ' MHz';
-                document.getElementById('systemMode').textContent = systemMode;
-                
+
+                // Update all fields from JSON data
+                document.getElementById('cpuGovernor').textContent = data.cpu_governor || '--';
+                document.getElementById('cpuFreq').textContent = (data.cpu_cur_freq || '--') + ' MHz';
+                document.getElementById('cpuMinFreq').textContent = (data.cpu_min_freq || '--') + ' MHz';
+                document.getElementById('cpuMaxFreq').textContent = (data.cpu_max_freq || '--') + ' MHz';
+                document.getElementById('systemMode').textContent = data.power_mode || '--';
+
+                // Get response time
                 const responseTime = await getSystemResponseTime();
                 document.getElementById('systemUptime').textContent = responseTime;
-                
+
                 // Color code based on power mode
                 const modeElement = document.getElementById('systemMode');
-                if (systemMode.includes('LOW POWER')) {
+                if (data.power_mode && data.power_mode.includes('LOW POWER')) {
                     modeElement.className = 'status-value success';
-                } else if (systemMode.includes('FULL POWER')) {
+                } else if (data.power_mode && data.power_mode.includes('FULL POWER')) {
                     modeElement.className = 'status-value warning';
                 } else {
                     modeElement.className = 'status-value error';
                 }
-                
+
                 statusDiv.style.display = 'block';
                 showNotification('Power status updated successfully');
-                
+
             } catch (e) {
                 console.error("Error fetching power status:", e);
                 showNotification('Error getting power status: ' + e.message, 'error');
-            }
-        }
-
-        // Get detailed CPU information
-        async function getCPUInfo() {
-            try {
-                const minFreq = await readSysFile('/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq');
-                const maxFreq = await readSysFile('/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq');
-                
-                return {
-                    minFreq: Math.round(parseInt(minFreq) / 1000),
-                    maxFreq: Math.round(parseInt(maxFreq) / 1000)
-                };
-            } catch (e) {
-                return { minFreq: 'Unknown', maxFreq: 'Unknown' };
-            }
-        }
-
-        // Read system file via API (you'll need to implement this endpoint)
-        async function readSysFile(path) {
-            try {
-                // This would require a backend endpoint to read system files
-                // For now, we'll use the powerstatus endpoint
-                const res = await fetch('/powerstatus');
-                const text = await res.text();
-                return 'Unknown'; // Placeholder
-            } catch (e) {
-                return 'Unknown';
             }
         }
 
@@ -298,16 +280,10 @@
         async function enableLowPower() {
             try {
                 showNotification('Enabling low power mode...', 'success');
-                
-                // You'll need to implement this endpoint in your Python code
                 const res = await fetch('/enable-low-power');
                 const result = await res.text();
-                
                 showNotification('Low power mode enabled successfully');
-                
-                // Refresh power status
-                setTimeout(getPowerStatus, 1000);
-                
+                setTimeout(getPowerStatus, 2000); // Wait 2 seconds then refresh
             } catch (e) {
                 console.error("Error enabling low power:", e);
                 showNotification('Error enabling low power mode', 'error');
@@ -318,16 +294,10 @@
         async function enableFullPower() {
             try {
                 showNotification('Enabling full power mode...', 'success');
-                
-                // You'll need to implement this endpoint in your Python code
                 const res = await fetch('/enable-full-power');
                 const result = await res.text();
-                
                 showNotification('Full power mode enabled successfully');
-                
-                // Refresh power status
-                setTimeout(getPowerStatus, 1000);
-                
+                setTimeout(getPowerStatus, 2000); // Wait 2 seconds then refresh
             } catch (e) {
                 console.error("Error enabling full power:", e);
                 showNotification('Error enabling full power mode', 'error');
@@ -336,24 +306,16 @@
 
         // Shutdown function
         async function shutdownSystem() {
-            const confirmed = confirm('⚠️ ARE YOU SURE YOU WANT TO SHUTDOWN THE SYSTEM?\n\nThis will turn off the Raspberry Pi completely. You will need to manually power it back on.');
+            const confirmed = confirm('⚠️ ARE YOU SURE YOU WANT TO SHUTDOWN THE SYSTEM?\n\nThis will turn off the Raspberry Pi completely.');
             if (confirmed) {
                 try {
                     showNotification('System shutdown initiated...', 'error');
-                    
-                    const res = await fetch('/shutdown');
-                    const result = await res.text();
-                    
-                    // Update UI to show shutdown in progress
+                    await fetch('/shutdown');
                     document.querySelectorAll('.temp').forEach(el => {
                         el.textContent = 'SHUTTING DOWN...';
                     });
                     document.getElementById('timestamp').textContent = 'System shutdown initiated';
-                    
-                    showNotification('System is shutting down...', 'error');
-                    
                 } catch (e) {
-                    console.error("Error shutting down:", e);
                     showNotification('Shutdown command sent. System should power off shortly.', 'error');
                 }
             }
@@ -361,23 +323,16 @@
 
         // Reboot function
         async function rebootSystem() {
-            const confirmed = confirm('⚠️ ARE YOU SURE YOU WANT TO REBOOT THE SYSTEM?\n\nThe Raspberry Pi will restart and the web interface will be unavailable for about 30 seconds.');
+            const confirmed = confirm('⚠️ ARE YOU SURE YOU WANT TO REBOOT THE SYSTEM?\n\nThe Raspberry Pi will restart.');
             if (confirmed) {
                 try {
                     showNotification('System reboot initiated...', 'error');
-                    
-                    const res = await fetch('/reboot');
-                    const result = await res.text();
-                    
+                    await fetch('/reboot');
                     document.querySelectorAll('.temp').forEach(el => {
                         el.textContent = 'REBOOTING...';
                     });
                     document.getElementById('timestamp').textContent = 'System reboot initiated';
-                    
-                    showNotification('System is rebooting...', 'error');
-                    
                 } catch (e) {
-                    console.error("Error rebooting:", e);
                     showNotification('Reboot command sent. System should restart shortly.', 'error');
                 }
             }
@@ -388,4 +343,5 @@
         updateTemps();
     </script>
 </body>
+
 </html>

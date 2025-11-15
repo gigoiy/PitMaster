@@ -65,16 +65,18 @@ def create_app():
             with open('/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq', 'r') as f:
                 max_freq = int(f.read().strip()) // 1000
         
-            return {
-                "power_mode": "LOW POWER 24/7" if governor == "powersave" else "FULL POWER",
+            power_mode = "LOW POWER 24/7" if governor == "powersave" else "FULL POWER"
+        
+            return jsonify({
+                "power_mode": power_mode,
                 "cpu_governor": governor,
                 "cpu_cur_freq": cur_freq,
                 "cpu_min_freq": min_freq,
                 "cpu_max_freq": max_freq,
                 "status": "Running"
-            }
+            })
         except Exception as e:
-            return {"error": str(e)}, 500
+            return jsonify({"error": str(e)}), 500
         
     @app.route('/enable-low-power')
     def enable_low_power():
