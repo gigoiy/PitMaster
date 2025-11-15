@@ -5,6 +5,10 @@
 2. Open terminal in the PitMaster directory
 3. Run: `chmod +x install.sh && ./install.sh`
 
+## Uninstallation
+1. Open terminal in the PitMaster directory
+2. Run: `chmod +x uninstall.sh && ./uninstall.sh`
+
 ## Sensor Wiring
 Connect all three MAX6675 boards as follows:
 
