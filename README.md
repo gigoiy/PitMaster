@@ -1,7 +1,7 @@
 # PitMaster Quick Start Guide
 
 ## Installation
-1. Download the PitMaster folder to your Raspberry Pi
+1. Run: `git clone https://github.com/gigoiy/PitMaster.git`
 2. Open terminal in the PitMaster directory
 3. Run: `chmod +x install.sh && ./install.sh`
 
